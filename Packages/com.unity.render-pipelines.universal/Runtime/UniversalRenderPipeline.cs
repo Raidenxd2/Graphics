@@ -869,7 +869,7 @@ namespace UnityEngine.Rendering.Universal
                 // Called and updated only once, as the same camera can be rendered multiple times.
                 // NOTE: Tracks only the current (this) camera, not shadow views or any other offscreen views.
                 // NOTE: Shared between both Execute and Render (RG) paths.
-                if (additionalCameraData != null)
+                if (BeanShootoutURP.EnableMotionVectorsSupport && additionalCameraData != null)
                     additionalCameraData.motionVectorsPersistentData.Update(cameraData);
 
                 // TODO: Move into the renderer. Problem: It modifies the AdditionalCameraData which is copied into RenderingData which causes value divergence for value types.

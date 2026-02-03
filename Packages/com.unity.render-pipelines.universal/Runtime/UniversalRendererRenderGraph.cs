@@ -396,7 +396,10 @@ namespace UnityEngine.Rendering.Universal
 
             CreateCameraNormalsTexture(renderGraph, cameraDescriptor);
 
-            CreateMotionVectorTextures(renderGraph, cameraDescriptor);
+            if (BeanShootoutURP.EnableMotionVectorsSupport)
+            {
+                CreateMotionVectorTextures(renderGraph, cameraDescriptor);
+            }
 
             CreateRenderingLayersTexture(renderGraph, cameraDescriptor);
 
@@ -599,7 +602,10 @@ namespace UnityEngine.Rendering.Universal
 
             useRenderPassEnabled = renderGraph.nativeRenderPassesEnabled;
 
-            MotionVectorRenderPass.SetRenderGraphMotionVectorGlobalMatrices(renderGraph, cameraData);
+            if (BeanShootoutURP.EnableMotionVectorsSupport)
+            {
+                MotionVectorRenderPass.SetRenderGraphMotionVectorGlobalMatrices(renderGraph, cameraData);
+            }
 
             SetupRenderGraphLights(renderGraph, renderingData, cameraData, lightData);
 
@@ -994,7 +1000,7 @@ namespace UnityEngine.Rendering.Universal
         {
             CopyDepthToDepthTexture(renderGraph, resourceData);
 
-            if (renderMotionVectors)
+            if (BeanShootoutURP.EnableMotionVectorsSupport && renderMotionVectors)
                 RenderMotionVectors(renderGraph, resourceData);
         }
 
@@ -1133,7 +1139,7 @@ namespace UnityEngine.Rendering.Universal
             // with depth before any user passes are executed.
             if (copySchedules.depth == DepthCopySchedule.AfterPrepass)
                 ExecuteScheduledDepthCopyWithMotion(renderGraph, resourceData, renderPassInputs.requiresMotionVectors);
-            else if ((copySchedules.depth == DepthCopySchedule.DuringPrepass) && renderPassInputs.requiresMotionVectors)
+            else if (BeanShootoutURP.EnableMotionVectorsSupport && (copySchedules.depth == DepthCopySchedule.DuringPrepass) && renderPassInputs.requiresMotionVectors)
                 RenderMotionVectors(renderGraph, resourceData);
 
             RecordCustomRenderGraphPasses(renderGraph, RenderPassEvent.AfterRenderingPrePasses);
@@ -1263,7 +1269,7 @@ namespace UnityEngine.Rendering.Universal
                 }
             }
 
-            if (copySchedules.depth == DepthCopySchedule.AfterOpaques)
+            if (BeanShootoutURP.EnableMotionVectorsSupport && copySchedules.depth == DepthCopySchedule.AfterOpaques)
                 RecordCustomPassesWithDepthCopyAndMotion(renderGraph, resourceData, renderPassInputs.requiresDepthTextureEarliestEvent, RenderPassEvent.AfterRenderingOpaques, renderPassInputs.requiresMotionVectors);
             else
                 RecordCustomRenderGraphPasses(renderGraph, RenderPassEvent.AfterRenderingOpaques);
@@ -1318,7 +1324,7 @@ namespace UnityEngine.Rendering.Universal
                     resourceData.additionalShadowsTexture);
             }
 
-            if (copySchedules.depth == DepthCopySchedule.AfterTransparents)
+            if (BeanShootoutURP.EnableMotionVectorsSupport && copySchedules.depth == DepthCopySchedule.AfterTransparents)
                 RecordCustomPassesWithDepthCopyAndMotion(renderGraph, resourceData, renderPassInputs.requiresDepthTextureEarliestEvent, RenderPassEvent.AfterRenderingTransparents, renderPassInputs.requiresMotionVectors);
             else
                 RecordCustomRenderGraphPasses(renderGraph, RenderPassEvent.AfterRenderingTransparents);

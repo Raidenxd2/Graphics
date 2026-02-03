@@ -30,6 +30,10 @@ public static class BeanShootoutURP
     /// Determines if HDR Display Output should be supported.
     /// </summary>
     public static bool EnableHDROutputSupport;
+    /// <summary>
+    /// Determines if Motion Vectors should be supported.
+    /// </summary>
+    public static bool EnableMotionVectorsSupport;
 #if KILLITMYSELF_URP
     /// <summary>
     /// Determines if EarlyCmd should be rendered. (EarlyCmd is the dark gray backgrond rendered behind everything to prevent nothing from being repainted)
