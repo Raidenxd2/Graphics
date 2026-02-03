@@ -463,8 +463,11 @@ namespace UnityEngine.Rendering.Universal
                 Graphics.ExecuteCommandBuffer(BeanShootout_EarlyCmd);
             }
 #endif
-            
-            SetHDRState(cameras);
+
+            if (BeanShootoutURP.EnableHDROutputSupport)
+            {
+                SetHDRState(cameras);
+            }
 
             int cameraCount = cameras.Count;
             // For XR, HDR and no camera cases, UI Overlay ownership must be enforced
@@ -486,7 +489,11 @@ namespace UnityEngine.Rendering.Universal
             using (new ContextRenderingScope(renderContext, cameras))
             {
                 SetupPerFrameShaderConstants();
-                XRSystem.SetDisplayMSAASamples((MSAASamples)asset.msaaSampleCount);
+
+                if (BeanShootoutURP.EnableXRRenderingSupport)
+                {
+                    XRSystem.SetDisplayMSAASamples((MSAASamples)asset.msaaSampleCount);
+                }
 
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
                 if (DebugManager.instance.isAnyDebugUIActive)
@@ -794,7 +801,15 @@ namespace UnityEngine.Rendering.Universal
 
             // TODO: move skybox code from C++ to URP in order to remove the call to context.Submit() inside DrawSkyboxPass
             // Until then, we can't use nested profiling scopes with XR multipass
-            CommandBuffer cmdScope = cameraData.xr.enabled ? null : cmd;
+            CommandBuffer cmdScope;
+            if (BeanShootoutURP.EnableXRRenderingSupport)
+            {
+                cmdScope = cameraData.xr.enabled ? null : cmd;
+            }
+            else
+            {
+                cmdScope = cmd;
+            }
 
             var cameraMetadata = CameraMetadataCache.GetCached(camera);
             using (new ProfilingScope(cmdScope, cameraMetadata.sampler)) // Enqueues a "BeginSample" command into the CommandBuffer cmd
@@ -845,8 +860,10 @@ namespace UnityEngine.Rendering.Universal
                 if (supportProbeVolume)
                     ProbeReferenceVolume.instance.BindAPVRuntimeResources(cmd, true);
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 // Must be called before culling because it emits intermediate renderers via Graphics.DrawInstanced.
                 ProbeReferenceVolume.instance.RenderDebug(camera, apvOptions, Texture2D.whiteTexture);
+#endif
 
                 // Update camera motion tracking (prev matrices) from cameraData.
                 // Called and updated only once, as the same camera can be rendered multiple times.
@@ -877,7 +894,6 @@ namespace UnityEngine.Rendering.Universal
                 // Initialize all the data types required for rendering.
                 UniversalLightData lightData;
                 UniversalShadowData shadowData;
-                CullContextData cullData;
 
                 using (new ProfilingScope(Profiling.Pipeline.initializeRenderingData))
                 {
@@ -886,11 +902,13 @@ namespace UnityEngine.Rendering.Universal
                     shadowData = CreateShadowData(frameData, asset, renderingMode);
                     CreatePostProcessingData(frameData, asset);
                     CreateRenderingData(frameData, asset, cmd, renderingMode, cameraData.renderer);
-                    cullData = CreateCullContextData(frameData, context);
                 }
 
                 RenderingData legacyRenderingData = new RenderingData(frameData);
+                
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 CheckAndApplyDebugSettings(ref legacyRenderingData);
+#endif
 
 #if ENABLE_ADAPTIVE_PERFORMANCE
                 if (asset?.useAdaptivePerformance == true)
@@ -1051,7 +1069,16 @@ namespace UnityEngine.Rendering.Universal
 
             // Prepare XR rendering
             var xrActive = false;
-            var xrRendering = baseCameraAdditionalData?.allowXRRendering ?? true;
+            bool xrRendering;
+            if (BeanShootoutURP.EnableXRRenderingSupport)
+            {
+                xrRendering = baseCameraAdditionalData?.allowXRRendering ?? true;
+            }
+            else
+            {
+                xrRendering = false;
+            }
+            
             var xrLayout = XRSystem.NewLayout();
             xrLayout.AddCamera(baseCamera, xrRendering);
 
@@ -1059,7 +1086,8 @@ namespace UnityEngine.Rendering.Universal
             foreach ((Camera _, XRPass xrPass) in xrLayout.GetActivePasses())
             {
                 var xrPassUniversal = xrPass as XRPassUniversal;
-                if (xrPass.enabled)
+                
+                if (BeanShootoutURP.EnableXRRenderingSupport && xrPass.enabled)
                 {
                     xrActive = true;
                     UpdateCameraStereoMatrices(baseCamera, xrPass);
@@ -1084,7 +1112,7 @@ namespace UnityEngine.Rendering.Universal
                     UniversalCameraData baseCameraData = CreateCameraData(frameData, baseCamera, baseCameraAdditionalData);
 
 #if ENABLE_VR && ENABLE_XR_MODULE
-                    if (xrPass.enabled)
+                    if (BeanShootoutURP.EnableXRRenderingSupport && xrPass.enabled)
                     {
                         baseCameraData.xr = xrPass;
 
@@ -1120,7 +1148,7 @@ namespace UnityEngine.Rendering.Universal
                     bool hdrDisplayOutputActive = mainHdrDisplayOutputActive;
 #if ENABLE_VR && ENABLE_XR_MODULE
                     // If we are rendering to xr then we need to look at the XR Display rather than the main non-xr display.
-                    if (xrPass.enabled)
+                    if (BeanShootoutURP.EnableXRRenderingSupport && xrPass.enabled)
                         hdrDisplayOutputActive = xrPass.isHDRDisplayOutputActive;
 #endif
                     finalOutputHDR =
@@ -1146,7 +1174,7 @@ namespace UnityEngine.Rendering.Universal
                 }
 
                 // Late latching is not supported after this point
-                if (xrPass.enabled)
+                if (BeanShootoutURP.EnableXRRenderingSupport && xrPass.enabled)
                     XRSystemUniversal.EndLateLatching(baseCamera, xrPassUniversal);
 
                 // Overlay Cameras Rendering
@@ -1165,7 +1193,7 @@ namespace UnityEngine.Rendering.Universal
                             ContextContainer overlayFrameData = GetRenderer(overlayCamera, overlayAdditionalCameraData).frameData;
                             UniversalCameraData overlayCameraData = CreateCameraData(overlayFrameData, baseCamera, baseCameraAdditionalData);
 #if ENABLE_VR && ENABLE_XR_MODULE
-                            if (xrPass.enabled)
+                            if (BeanShootoutURP.EnableXRRenderingSupport && xrPass.enabled)
                             {
                                 overlayCameraData.xr = xrPass;
                                 UpdateCameraData(overlayCameraData, xrPass);
@@ -1176,7 +1204,10 @@ namespace UnityEngine.Rendering.Universal
                             overlayCameraData.camera = overlayCamera;
                             overlayCameraData.baseCamera = baseCamera;
 
-                            UpdateCameraStereoMatrices(overlayAdditionalCameraData.camera, xrPass);
+                            if (BeanShootoutURP.EnableXRRenderingSupport)
+                            {
+                                UpdateCameraStereoMatrices(overlayAdditionalCameraData.camera, xrPass);
+                            }
 
                             using (new CameraRenderingScope(context, overlayCamera))
                             {
@@ -1201,7 +1232,7 @@ namespace UnityEngine.Rendering.Universal
                 }
             }
 
-            if (xrActive)
+            if (BeanShootoutURP.EnableXRRenderingSupport && xrActive)
             {
                 CommandBuffer cmd = CommandBufferPool.Get();
                 XRSystem.RenderMirrorView(cmd, baseCamera);
@@ -2350,6 +2381,11 @@ namespace UnityEngine.Rendering.Universal
         /// <returns>True if the main display and platform support HDR and HDR output is enabled on the platform.</returns>
         internal static bool HDROutputForMainDisplayIsActive()
         {
+            if (!BeanShootoutURP.EnableHDROutputSupport)
+            {
+                return false;
+            }
+            
             bool hdrOutputSupported = SystemInfo.hdrDisplaySupportFlags.HasFlag(HDRDisplaySupportFlags.Supported) && asset.supportsHDR;
             bool hdrOutputActive = HDROutputSettings.main.available && HDROutputSettings.main.active;
             return hdrOutputSupported && hdrOutputActive;

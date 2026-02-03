@@ -525,8 +525,11 @@ namespace UnityEngine.Rendering.Universal
                 bool xrMultipassEnabled = false;
                 int multipassId = 0;
 #if ENABLE_VR && ENABLE_XR_MODULE
-                xrMultipassEnabled = cameraData.xr.enabled && !cameraData.xr.singlePassEnabled;
-                multipassId = cameraData.xr.multipassId;
+                if (BeanShootoutURP.EnableXRRenderingSupport)
+                {
+                    xrMultipassEnabled = cameraData.xr.enabled && !cameraData.xr.singlePassEnabled;
+                    multipassId = cameraData.xr.multipassId;
+                }
 #endif
 
                 if (history.IsAccessRequested<RawColorHistory>() && resourceData.cameraColor.IsValid())
@@ -646,13 +649,19 @@ namespace UnityEngine.Rendering.Universal
 
             OnBeforeRendering(renderGraph);
 
-            BeginRenderGraphXRRendering(renderGraph);
+            if (BeanShootoutURP.EnableXRRenderingSupport)
+            {
+                BeginRenderGraphXRRendering(renderGraph);
+            }
 
             OnMainRendering(renderGraph, context, renderPassInputs, requirePrepass, requireDepthTexture);
 
             OnAfterRendering(renderGraph, applyPostProcessing);
 
-            EndRenderGraphXRRendering(renderGraph);
+            if (BeanShootoutURP.EnableXRRenderingSupport)
+            {
+                EndRenderGraphXRRendering(renderGraph);
+            }
         }
 
         /// <summary>
@@ -995,7 +1004,7 @@ namespace UnityEngine.Rendering.Universal
             UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
             UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
             UniversalLightData lightData = frameData.Get<UniversalLightData>();
-            UniversalPostProcessingData postProcessingData = frameData.Get<UniversalPostProcessingData>();
+            // UniversalPostProcessingData postProcessingData = frameData.Get<UniversalPostProcessingData>();
 
             if (!renderGraph.nativeRenderPassesEnabled)
             {
@@ -1042,7 +1051,7 @@ namespace UnityEngine.Rendering.Universal
             }
 
 #if ENABLE_VR && ENABLE_XR_MODULE
-            if (cameraData.xr.enabled && cameraData.xr.hasMotionVectorPass)
+            if (BeanShootoutURP.EnableXRRenderingSupport && cameraData.xr.enabled && cameraData.xr.hasMotionVectorPass)
             {
                 // Update prevView and View matrices.
                 m_XRDepthMotionPass?.Update(ref cameraData);
@@ -1130,7 +1139,7 @@ namespace UnityEngine.Rendering.Universal
             RecordCustomRenderGraphPasses(renderGraph, RenderPassEvent.AfterRenderingPrePasses);
 
 #if ENABLE_VR && ENABLE_XR_MODULE
-            if (cameraData.xr.hasValidOcclusionMesh)
+            if (BeanShootoutURP.EnableXRRenderingSupport && cameraData.xr.hasValidOcclusionMesh)
                 m_XROcclusionMeshPass.Render(renderGraph, frameData, resourceData.activeColorTexture, resourceData.activeDepthTexture);
 #endif
 
@@ -1353,7 +1362,7 @@ namespace UnityEngine.Rendering.Universal
         private void OnAfterRendering(RenderGraph renderGraph, bool applyPostProcessing)
         {
             UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
-            UniversalRenderingData renderingData = frameData.Get<UniversalRenderingData>();
+            // UniversalRenderingData renderingData = frameData.Get<UniversalRenderingData>();
             UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
             UniversalPostProcessingData postProcessingData = frameData.Get<UniversalPostProcessingData>();
 
@@ -1560,7 +1569,7 @@ namespace UnityEngine.Rendering.Universal
             }
 
 #if ENABLE_VR && ENABLE_XR_MODULE
-            if (cameraData.xr.enabled)
+            if (BeanShootoutURP.EnableXRRenderingSupport && cameraData.xr.enabled)
             {
                 // Populate XR depth as requested by XR provider.
                 if (!xrDepthTargetResolved && cameraData.xr.copyDepth)
@@ -1731,7 +1740,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
 #if ENABLE_VR && ENABLE_XR_MODULE
             // some XR devices require depth data to composite the final image. In such case, we need to preserve the eyetexture(backbuffer) depth.
-            if (cameraData.xr.enabled && cameraData.xr.copyDepth)
+            if (BeanShootoutURP.EnableXRRenderingSupport && cameraData.xr.enabled && cameraData.xr.copyDepth)
             {
                 importBackbufferDepthParams.discardOnLastUse = false;
             }
@@ -1744,7 +1753,7 @@ namespace UnityEngine.Rendering.Universal
             bool isBuiltInTexture = (cameraData.targetTexture == null);
 
 #if ENABLE_VR && ENABLE_XR_MODULE
-            if (cameraData.xr.enabled)
+            if (BeanShootoutURP.EnableXRRenderingSupport && cameraData.xr.enabled)
             {
                 isBuiltInTexture = false;
             }
@@ -1779,7 +1788,7 @@ namespace UnityEngine.Rendering.Universal
             else
             {
 #if ENABLE_VR && ENABLE_XR_MODULE
-                if (cameraData.xr.enabled)
+                if (BeanShootoutURP.EnableXRRenderingSupport && cameraData.xr.enabled)
                 {
                     importInfo.width = cameraData.xr.renderTargetDesc.width;
                     importInfo.height = cameraData.xr.renderTargetDesc.height;
@@ -1918,7 +1927,10 @@ namespace UnityEngine.Rendering.Universal
             m_CopyDepthPass.m_CopyResolvedDepth = copyResolvedDepth;
 
 #if ENABLE_VR && ENABLE_XR_MODULE
-            m_XRCopyDepthPass.m_CopyResolvedDepth = copyResolvedDepth;
+            if (BeanShootoutURP.EnableXRRenderingSupport)
+            {
+                m_XRCopyDepthPass.m_CopyResolvedDepth = copyResolvedDepth;
+            }
 #endif
         }
 
