@@ -106,19 +106,19 @@ namespace UnityEngine.Rendering
             s_Instance?.batcher.UpdateInstanceOccluders(renderGraph, occluderParameters, occluderSubviewUpdates);
         }
 
-        /// <summary>
-        /// Enable or disable GPUResidentDrawer based on the project settings.
-        /// We call this every frame because GPUResidentDrawer can be enabled/disabled by the settings outside the render pipeline asset.
-        /// </summary>
-        public static void ReinitializeIfNeeded()
-        {
-#if UNITY_EDITOR
-            if (!IsForcedOnViaCommandLine() && !MaintainContext && (IsProjectSupported() != IsEnabled()))
-            {
-                Reinitialize();
-            }
-#endif
-        }
+//         /// <summary>
+//         /// Enable or disable GPUResidentDrawer based on the project settings.
+//         /// We call this every frame because GPUResidentDrawer can be enabled/disabled by the settings outside the render pipeline asset.
+//         /// </summary>
+//         public static void ReinitializeIfNeeded()
+//         {
+// #if UNITY_EDITOR
+//             if (!IsForcedOnViaCommandLine() && !MaintainContext && (IsProjectSupported() != IsEnabled()))
+//             {
+//                 Reinitialize();
+//             }
+// #endif
+//         }
 
         #endregion
 

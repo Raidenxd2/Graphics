@@ -23,7 +23,8 @@ namespace UnityEngine.Rendering
 
         internal static bool IsProjectSupported()
         {
-            return IsProjectSupported(out string _, out LogType __);
+            return false;
+            // return IsProjectSupported(out string _, out LogType __);
         }
 
         internal static bool IsProjectSupported(out string message, out LogType severity)

@@ -227,6 +227,10 @@ namespace UnityEngine.Rendering.Universal
         internal static Upscaling upscaling;
 #endif
 
+#if KILLITMYSELF_URP
+        private CommandBuffer BeanShootout_EarlyCmd;
+#endif
+
         /// <summary>
         /// Creates a new <c>UniversalRenderPipeline</c> instance.
         /// </summary>
@@ -325,6 +329,14 @@ namespace UnityEngine.Rendering.Universal
 #if ENABLE_UPSCALER_FRAMEWORK
             upscaling = new Upscaling(asset.iUpscalerOptions);
 #endif
+            
+#if KILLITMYSELF_URP
+            BeanShootout_EarlyCmd = new();
+            BeanShootout_EarlyCmd.ClearRenderTarget(false, true, new Color(0.005f, 0.004f, 0.004f));
+#endif
+
+            GraphicsSettings.lightsUseLinearIntensity = true;
+            GraphicsSettings.lightsUseColorTemperature = true;
         }
 
         /// <inheritdoc/>
@@ -367,6 +379,10 @@ namespace UnityEngine.Rendering.Universal
 
             DisposeAdditionalCameraData();
             AdditionalLightsShadowAtlasLayout.ClearStaticCaches();
+            
+#if KILLITMYSELF_URP
+            BeanShootout_EarlyCmd.Dispose();
+#endif
         }
 
         // If the URP gets destroyed, we must clean up all the added URP specific camera data and
@@ -441,6 +457,10 @@ namespace UnityEngine.Rendering.Universal
         /// <inheritdoc/>
         protected override void Render(ScriptableRenderContext renderContext, List<Camera> cameras)
         {
+#if KILLITMYSELF_URP
+            Graphics.ExecuteCommandBuffer(BeanShootout_EarlyCmd);
+#endif
+            
             SetHDRState(cameras);
 
             int cameraCount = cameras.Count;
@@ -454,7 +474,7 @@ namespace UnityEngine.Rendering.Universal
             // Bandwidth optimization with Render Graph in some circumstances
             SetupScreenMSAASamplesState(cameraCount);
 
-            GPUResidentDrawer.ReinitializeIfNeeded();
+            //GPUResidentDrawer.ReinitializeIfNeeded();
 
             // TODO: Would be better to add Profiling name hooks into RenderPipelineManager.
             // C#8 feature, only in >= 2020.2
@@ -462,8 +482,6 @@ namespace UnityEngine.Rendering.Universal
 
             using (new ContextRenderingScope(renderContext, cameras))
             {
-                GraphicsSettings.lightsUseLinearIntensity = (QualitySettings.activeColorSpace == ColorSpace.Linear);
-                GraphicsSettings.lightsUseColorTemperature = true;
                 SetupPerFrameShaderConstants();
                 XRSystem.SetDisplayMSAASamples((MSAASamples)asset.msaaSampleCount);
 
