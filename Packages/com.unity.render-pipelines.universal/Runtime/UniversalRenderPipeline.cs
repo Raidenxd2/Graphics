@@ -458,7 +458,10 @@ namespace UnityEngine.Rendering.Universal
         protected override void Render(ScriptableRenderContext renderContext, List<Camera> cameras)
         {
 #if KILLITMYSELF_URP
-            Graphics.ExecuteCommandBuffer(BeanShootout_EarlyCmd);
+            if (BeanShootoutURP.EnableEarlyCmd)
+            {
+                Graphics.ExecuteCommandBuffer(BeanShootout_EarlyCmd);
+            }
 #endif
             
             SetHDRState(cameras);
